@@ -10,7 +10,7 @@
 
 module.exports = function(grunt) {
 
-  grunt.registerTask('smart_vlt', 'Friendly grunt plugin to run Adobe VLT commands.', function(params) {
+  grunt.registerTask('svlt', 'Friendly grunt plugin to run Adobe VLT commands.', function(params) {
 
     var done = this.async();
 

@@ -78,6 +78,9 @@ module.exports = function(grunt, options, scope) {
       status.stdout.on('data', collectData);
       status.stderr.on('data', collectData);
       status.on('close', function(){ callback(commandList) });
+      status.on('error', function(data) {
+        grunt.log.error('Make sure that vlt script is available. And directory path '
+          + options.vaultWork+'  exist.'); })
     });
 
     var status = spawn('vlt',['st'],{ cwd: options.vaultWork });
