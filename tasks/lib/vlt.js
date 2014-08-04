@@ -91,7 +91,9 @@ module.exports = function(grunt, options, scope) {
     var command = 'vlt --credentials ' + options.credentials.user + ':' + options.credentials.pwd
               + ' co ' + options.params + ' ' + options.host + ' .';
 
+    // stdout true or false
     if (options.stdout) {
+      // if stdout specifies a log file then write to that log file.
       if (options.stdout.length) {
         command += ' > ' + options.stdout;
       }

@@ -3,9 +3,15 @@
 > Friendly grunt plugin to run Adobe VLT commands.
 
 ## Getting Started
-This plugin requires Grunt `~0.4`
+This plugin requires Grunt `>= 0.4`
 
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
+
+## Installing
+Ensure you have vlt adobe tool installed in your system.
+
+Please follow this guide: http://wem.help.adobe.com/enterprise/en_US/10-0/wem/developing/developmenttools/developing_with_eclipse.html#Installing%20FileVault%20(VLT)
+
 
 ```shell
 npm install grunt-smart-vlt --save-dev
@@ -17,69 +23,59 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('grunt-smart-vlt');
 ```
 
-## The "smart_vlt" task
+## The "svlt" task
 
 ### Overview
-In your project's Gruntfile, add a section named `smart_vlt` to the data object passed into `grunt.initConfig()`.
+In your project's Gruntfile, add a section named `svlt` to the data object passed into `grunt.initConfig()`.
 
 ```js
 grunt.initConfig({
-  smart_vlt: {
+  svlt: {
     options: {
-      // Task-specific options go here.
-    },
-    your_target: {
-      // Target-specific file lists and/or options go here.
-    },
+      vaultWork: '< path to the vlt working directory>',
+      host: 'http://localhost:4502/crx',
+      credentials: {
+        user: '< user >',
+        pwd: '< password >'
+      },
+      params: '--verbose --force', // params for when vlt checkouts.
+      stdout: < true > || < false > || < vltlog.txt > // you can specify true for console output, or a path log.
+    }
   },
 });
 ```
 
 ### Options
 
-#### options.separator
+#### options.vaultWork
 Type: `String`
-Default value: `',  '`
+Default value: `'public/content/jcr_root'`
 
-A string value that is used to do something with whatever.
+Path where you want to checkout for svlt:init task.
 
-#### options.punctuation
+#### options.host
 Type: `String`
-Default value: `'.'`
+Default value: `'http://localhost:4502/crx'`
 
-A string value that is used to do something else with whatever else.
+Target host used by vlt:init
 
 ### Usage Examples
 
 #### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
 
 ```js
 grunt.initConfig({
-  smart_vlt: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
-```
-
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
-
-```js
-grunt.initConfig({
-  smart_vlt: {
+  svlt: {
     options: {
-      separator: ': ',
-      punctuation: ' !!!',
-    },
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
+
     },
   },
 });
+
+grunt.loadNpmTasks('grunt-smart-vlt');
+
+grunt.registerTask('vlt', ['svlt:init', 'svlt']);
+
 ```
 
 ## Contributing
