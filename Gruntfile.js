@@ -30,21 +30,9 @@ module.exports = function(grunt) {
 
     // Configuration to be run (and then tested).
     smart_vlt: {
-      default_options: {
-        options: {
-        },
-        files: {
-          'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123']
-        }
-      },
-      custom_options: {
-        options: {
-          separator: ': ',
-          punctuation: ' !!!'
-        },
-        files: {
-          'tmp/custom_options': ['test/fixtures/testing', 'test/fixtures/123']
-        }
+      options: {
+        vaultWork: '/home/proton/code/cq-kids/ntg-kids-web-view/target/vault-work/jcr_root',
+        params: '--verbose --force'
       }
     },
 
