@@ -54,7 +54,7 @@ grunt.initConfig({
         host: {
           uri: 'http://localhost:4502/crx',
           user: 'admin',
-          password: 'admin'
+          pwd: 'admin'
         },
         autoforce: true,
         params: '--verbose',
@@ -86,8 +86,13 @@ Type: `Array`
 You must specify all directories and file filters that you want to commit under work directory.
 
 #### Host.User
-
+**value required**
+Type: `String`
 Set false if you won't use credentials, or pass a valid string with user name.
+
+#### Host.pwd
+Type: `String`
+Make sure to pass a valid string password if you are using the user property. otherways it will fail!.
 
 #### options.checkout.params
 Type: `String`
