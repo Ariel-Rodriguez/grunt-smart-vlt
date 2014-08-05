@@ -39,7 +39,7 @@ module.exports = function(grunt, options, scope) {
         'cmd': ['ci -N']
       }, {
         'filter': new RegExp('(^[A]\\s)|(^[D]\\s)','gm'),
-        'cmd': ['up -N','ci -N']
+        'cmd': ['ci -N']
       }, ];
 
     // We read every stream object coming from chilld process
@@ -47,10 +47,10 @@ module.exports = function(grunt, options, scope) {
     var collectData = function(buffer) {
 
       var data = buffer.toString();
-
       // Array with files captured from data buffer. We keep its vlt status for each file.
-      var filesData = data.replace(/[(].+[)]/g,'').split(/(\n)/g);
+      var filesData = data.replace(/[(].+[)]/g,'').replace(/(\n)/g,';').split(';');
 
+      console.log(data);
       // For each file we have to detect what filter apply
       filesData.forEach(function(fData) {
 
@@ -61,8 +61,9 @@ module.exports = function(grunt, options, scope) {
 
             // Remove the VLT status from string.
             var file = fData.replace(sf.filter,'').trim();
+
             // Check if the file is not being filtered by task options
-            var isValid = grunt.file.isMatch({ cwd: options.vaultWork }, options.src, file);
+            var isValid = ((file.length) && grunt.file.isMatch({ cwd: options.vaultWork }, options.src, file));
 
             if (isValid) {
               commandList.push({
@@ -75,14 +76,14 @@ module.exports = function(grunt, options, scope) {
       });
     };
 
-    process.nextTick(function() {
-      status.stdout.on('data', collectData);
-      status.stderr.on('data', collectData);
-      status.on('close', function(){ callback(commandList) });
-      status.on('error', onExecError)
+    var status = exec('vlt st',{ cwd: options.vaultWork }, function(error,stdout,stderr) {
+      if (!error) {
+        collectData(stdout);
+      } else {
+        onExecError(error);
+      }
+      callback(commandList)
     });
-
-    var status = exec('vlt st',{ cwd: options.vaultWork }, function(err,stdout,stderr) {});
   };
 
 
@@ -133,7 +134,7 @@ module.exports = function(grunt, options, scope) {
     buildCheckoutCommand(options, function(command) {
 
       grunt.log.writeln(command);
-
+      grunt.log.writeln('Please wait...');
       var coProcess = exec(command, {maxBuffers: 200*2048, cwd: options.vaultWork},function(error,stdo,stde) {
         if (options.checkout.stdout !== false) {
           console.log(stdo);
@@ -156,13 +157,14 @@ module.exports = function(grunt, options, scope) {
     var maxAttemps = 4;
     // Checks for some available vlt operations and execute them.
     var processAll = function() {
+      grunt.log.writeln('Getting information...');
 
       // Callback returns the tasklist what contains the things that we should run
       // to keep up to date our work directory.
       whatsNext(function(taskList) {
 
         // Executes each vlt's commit at once (sub-commands per file must run in serie)
-        async.each(taskList, function(task, taskFinish) {
+        async.each(taskList, function(task, nextTask) {
 
           // Executes each vlt sub-command in order.
           async.eachSeries(task.cmd, function(arg, nextCommand) {
@@ -180,16 +182,17 @@ module.exports = function(grunt, options, scope) {
               nextCommand();
             });
 
-          }, taskFinish);
+          }, nextTask);
+        }, function(){
 
-        }, function() {
             if (taskList.length && --maxAttemps) {
               processAll()
             } else {
               error = maxAttemps === 0
               callback(error);
             }
-        });// each
+
+        });
       });// whatsNext
     };// processAll
 
