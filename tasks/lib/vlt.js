@@ -21,56 +21,49 @@ module.exports = function(grunt, options, scope) {
   var whatsNext = function(callback) {
     var commandList = [];
 
-    // sometimes spawn output returns a vlt output in two lines.
-    // if datalost was detected, then on next data received try to
-    // continue the last job joining the current data.
-    var dataLost = '';
-
     // statusFilter - Hashmap to recognize and register what command must we run related to vlt status output.
     // Reference: http://dev.day.com/docs/en/cq/current/core/how_to/how_to_use_the_vlttool.html#Sync
     var statusFilter = [{
-        'filter': new RegExp('(^[!]\\s)','g'),
-        'cmd': ['del','ci']
+        'filter': new RegExp('(^[!]\\s)','gm'),
+        'cmd': ['del','ci -N']
       }, {
-        'filter': new RegExp('(^[?]\\s)','g'),
-        'cmd': ['add','ci']
+        'filter': new RegExp('(^[?]\\s)','gm'),
+        'cmd': ['add -N','ci -N']
       }, {
-        'filter': new RegExp('(^[A]\\s)|(^[M]\\s)|(^[D]\\s)','g'),
-        'cmd': ['ci']
+        'filter': new RegExp('(^[A]\\s)|(^[M]\\s)|(^[D]\\s)','gm'),
+        'cmd': ['ci -N']
       }];
 
     // We read every stream object coming from chilld process
     // and push the proper command for that instruction outputed from that stream.
     var collectData = function(buffer) {
 
-      //  we join dataLost for those cases that when buffer line comes in two reads. (a fragmented buffer)
-      var data = dataLost + buffer.toString();
+      var data = buffer.toString();
 
-      // Generate the proper command regarding to statusFilter
-      statusFilter.forEach(function(sf) {
-        if (data.match(sf.filter)) {
+      // Array with files captured from data buffer. We keep its vlt status for each file.
+      var filesData = data.replace(/[(].+[)]/g,'').split(/(\n)/g);
 
-          // capture the target file sanitize the current target filepath .
-          var file = data.replace(sf.filter,'')
-                      // removing return lines
-                      .replace(/(\n)$/g,'')
-                      // removing "(ext/type)"
-                      .replace(/[(].+[)]/g,'');
+      // For each file we have to detect what filter apply
+      filesData.forEach(function(fData) {
 
-          // if the target didn't come this time, then we save current data.
-          if (file.length < 0) {
-            dataLost = data + ' ';
+        // For all filters (yes all)
+        statusFilter.forEach(function(sf) {
+
+          if (fData.match(sf.filter)) {
+
+            // Remove the VLT status from string.
+            var file = fData.replace(sf.filter,'').trim();
+            // Check if the file is not being filtered by task options
+            var isValid = grunt.file.isMatch({ cwd: options.vaultWork }, options.src, file);
+
+            if (isValid) {
+              commandList.push({
+                'cmd': sf.cmd,
+                'file': file
+              });
+            }
           }
-          // If it wasn'ta datalost then always reset its status
-          // and push the result command.
-          else {
-            dataLost = '';
-            commandList.push({
-              'cmd': sf.cmd,
-              'file': file
-            });
-          }
-        };
+        });
       });
     };
 
@@ -83,23 +76,27 @@ module.exports = function(grunt, options, scope) {
           + options.vaultWork+'  exist.'); })
     });
 
-    var status = spawn('vlt',['st'],{ cwd: options.vaultWork });
+    var status = exec('vlt st',{ cwd: options.vaultWork }, function(err,stdout,stderr) {});
   };
 
 
   exports.checkout = function(onError, onFinish) {
-    var command = 'vlt --credentials ' + options.credentials.user + ':' + options.credentials.pwd
-              + ' co ' + options.params + ' ' + options.host + ' .';
 
-    // stdout true or false
-    if (options.stdout) {
-      // if stdout specifies a log file then write to that log file.
-      if (options.stdout.length) {
+    var opts = options.checkout;
+
+    var credentials = (opts.host.user.length) ? (' --credentials ' + opts.host.user + ':' + opts.host.pwd) : '';
+
+    var params = (typeof opts.params === 'string') ? opts.params : '';
+
+    var command = 'vlt' + credentials + ' co ' + params + opts.host.uri + ' ' + options.vaultWork;
+
+    // stdout can be true, false or a filepath to log.
+    if ((typeof options.stdout === 'string') && (options.stdout.length)) {
         command += ' > ' + options.stdout;
-      }
     } else {
-      command += ' > /dev/null';
-    };
+      if (options.stdout === !1)
+        command += ' > /dev/null';
+    }
 
     exec(command, {maxBuffers: 200*2048, cwd: options.vaultWork},
       function(error, stdout, stderr) {
@@ -107,46 +104,48 @@ module.exports = function(grunt, options, scope) {
           if (onError instanceof Function) {
             onError(stderr);
           }
-        };
-
+        }
         if (onFinish instanceof Function) {
           onFinish(stdout);
-        };
+        }
     });
   };
 
 
   exports.autorun = function(callback) {
-    // tasklist contains the things that we might do to keep vlt work directory up to date with the host.
+
+    // Check for some available vlt operations and execute them.
     var toDo = function() {
+
+      // tasklist contains the things that we might do to keep up to date our work directory.
       whatsNext(function(taskList) {
 
-      // Executes each vlt commit (all tasks at once)
+      // Executes each vlt commit (all tasks at once) multithread: true
       async.each(taskList, function(task, taskFinish) {
 
         // Execute each vlt sub-command in order.
         async.eachSeries(task.cmd, function(arg, nextCommand) {
 
           // TODO: make these arguments optional
-          var command = 'vlt ' + arg + ' -N --force ' + task.file;
+          var command = 'vlt ' + arg + ' --force ' + task.file;
 
           console.log('running: '+command+' | From:'+options.vaultWork);
 
           var proc = exec(command, { cwd: options.vaultWork }, function(err,stdout,stderr) {
-            console.log(stdout);
-            console.log(stderr);
+            if (options.stdout) {
+              grunt.log.writeln(stdout);
+            }
             nextCommand();
           });
-
         }, function() {
           taskFinish();
         });
       }, function() {
-        if (taskList.length > 0) {
-          toDo()
-        } else {
-          callback(0);
-        }
+          if (taskList.length > 0) {
+            toDo()
+          } else {
+            callback(0);
+          }
       });// each
     });// whatsNext
     };// toDo

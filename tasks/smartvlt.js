@@ -15,20 +15,14 @@ module.exports = function(grunt) {
     var done = this.async();
 
     // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({
-      vaultWork: 'public/content/jcr_root',
-      host: 'http://localhost:4502/crx',
-      credentials: {
-        user: 'admin',
-        pwd: 'admin'
-      },
-      params: '--verbose',
-      stdout: true
-    });
+    var options = this.options({ vaultWork: 'vault/content/jcr_root'});
 
     var vlt = require('./lib/vlt')(grunt, options, this);
 
-    if (params === 'init') {
+    if ( this.args[0] === 'co') {
+
+      this.requiresConfig('svlt.checkout.host');
+
       vlt.checkout(
         function(err) {
           done(false);
