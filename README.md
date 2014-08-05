@@ -1,16 +1,28 @@
 # grunt-smart-vlt
 
 > Friendly grunt plugin to run Adobe VLT commands.
+> Run svlt task to automatically commit the changes from your local work.
+>
+> Call to svlt task after any change on your cq vault directory and all vlt operations will be performed.
 
 ## Getting Started
-This plugin requires Grunt `>= 0.4`
+This plugin requires Grunt `~0.4.5`
 
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
 
 ## Installing
-Ensure you have vlt adobe tool installed in your system.
+If VLT command line is not installed, please follow next:
 
-Please follow this guide: http://wem.help.adobe.com/enterprise/en_US/10-0/wem/developing/developmenttools/developing_with_eclipse.html#Installing%20FileVault%20(VLT)
+1. In your file system, go to <cq-installation-dir>/crx-quickstart/opt/filevault. The build is available in both tgz and zip formats.
+
+2. Extract the archive.
+
+3. Add `<cq-installation-dir>/crx-quickstart/opt/filevault/vault-cli-<version>/bin` to your environment PATH so that the command files vlt or vlt.bat are accessed as appropriate. For example, `<cq-installation-dir>/crx-quickstart/opt/filevault/vault-cli-1.1.2/bin`
+
+Open a command line shell and execute `vlt --help`. Make sure it doesn't throw an error.
+
+
+```[Adobe Guide Reference](http://wem.help.adobe.com/enterprise/en_US/10-0/wem/developing/developmenttools/developing_with_eclipse.html#Installing%20FileVault%20(VLT))
 
 
 ```shell
@@ -32,14 +44,20 @@ In your project's Gruntfile, add a section named `svlt` to the data object passe
 grunt.initConfig({
   svlt: {
     options: {
-      vaultWork: '< path to the vlt working directory>',
-      host: 'http://localhost:4502/crx',
-      credentials: {
-        user: '< user >',
-        pwd: '< password >'
-      },
-      params: '--verbose --force', // params for when vlt checkouts.
-      stdout: < true > || < false > || < vltlog.txt > // you can specify true for console output, or a path log.
+      vaultWork: 'target/vault-work/jcr_root',
+      src: ['**','**/{*.*,.*.xml}', '!**/.vlt*'],
+      stdout: true
+
+      checkout: {
+        host: {
+          uri: 'http://localhost:4502/crx',
+          user: 'admin',
+          password: 'admin'
+        },
+        autoforce: true,
+        params: '--verbose',
+        stdout: true
+      }
     }
   },
 });
@@ -49,32 +67,60 @@ grunt.initConfig({
 
 #### options.vaultWork
 Type: `String`
-Default value: `'public/content/jcr_root'`
+**value required**
 
-Path where you want to checkout for svlt:init task.
+This path is where the working directory is loacated.
 
-#### options.host
+**NOTE: svlt:co will checkout to this path.**
+
+#### options.checkout.params
+Type: `Array`
+
+You must specify all directories and file filters that you want to commit under work directory.
+
+#### Host.User
+
+Set false if you won't use credentials, or pass a valid string with user name.
+
+#### options.checkout.params
 Type: `String`
-Default value: `'http://localhost:4502/crx'`
 
-Target host used by vlt:init
+You can pass next optional arguments to checkout: '--verbose --force -q -f'
+
+#### options.checkout.autoforce
+Type: `Boolean`
+
+pass true if svlt:co should run in --force mode only when work directory has never been initialized yet.
 
 ### Usage Examples
-
-#### Default Options
 
 ```js
 grunt.initConfig({
   svlt: {
-    options: {
-
-    },
+   ...
   },
 });
 
 grunt.loadNpmTasks('grunt-smart-vlt');
 
-grunt.registerTask('vlt', ['svlt:init', 'svlt']);
+grunt.registerTask('vlt', ['svlt:co', 'svlt']);
+
+```
+
+### Usage With grunt-contrib-watch
+
+You can call 'svlt' after some watch event.
+
+```js
+grunt.initConfig({
+  svlt : { ... },
+  watch : {
+    coffee: {
+      files: [...],
+      tasks: ['coffee', 'svlt']
+    }
+  }
+});
 
 ```
 

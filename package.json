@@ -1,7 +1,7 @@
 {
   "name": "grunt-smart-vlt",
   "description": "Friendly grunt plugin to run Adobe VLT commands.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "homepage": "https://github.com/Ariel-Rodriguez/grunt-smart-vlt",
   "author": {
     "name": "Ariel Fernando Delfor Rodriguez",

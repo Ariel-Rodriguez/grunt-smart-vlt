@@ -14,6 +14,12 @@ module.exports = function(grunt, options, scope) {
   var exec  = require('child_process').exec;
   var async = require('async');
 
+
+  var onExecError = function(error) {
+    grunt.log.error('Make sure that vlt script is available. And directory path '
+      + options.vaultWork+'  exist.');
+  };
+
   /*
     Returns a callback with a list of possible task to do with vlt.
   */
@@ -73,44 +79,74 @@ module.exports = function(grunt, options, scope) {
       status.stdout.on('data', collectData);
       status.stderr.on('data', collectData);
       status.on('close', function(){ callback(commandList) });
-      status.on('error', function(data) {
-        grunt.log.error('Make sure that vlt script is available. And directory path '
-          + options.vaultWork+'  exist.'); })
+      status.on('error', onExecError)
     });
 
     var status = exec('vlt st',{ cwd: options.vaultWork }, function(err,stdout,stderr) {});
   };
 
 
-  exports.checkout = function(onError, onFinish) {
+  var buildCheckoutCommand = function(options, callback) {
 
     var opts = options.checkout;
 
-    var credentials = (opts.host.user.length) ? (' --credentials ' + opts.host.user + ':' + opts.host.pwd) : '';
+    var credentials = (opts.host.user.length) ? ('--credentials ' + opts.host.user + ':' + opts.host.pwd) : '';
 
-    var params = (typeof opts.params === 'string') ? opts.params : '';
+    var buildParams = function(cbParams) {
 
-    var command = 'vlt' + credentials + ' co ' + params + opts.host.uri + ' ' + options.vaultWork;
+      var params = (typeof opts.params === 'string') ? opts.params : '';
 
-    // stdout can be true, false or a filepath to log.
-    if ((typeof options.stdout === 'string') && (options.stdout.length)) {
-        command += ' > ' + options.stdout;
-    } else {
-      if (options.stdout === !1)
-        command += ' > /dev/null';
-    }
+      if (opts.autoforce) {
 
-    exec(command, {maxBuffers: 200*2048, cwd: options.vaultWork},
-      function(error, stdout, stderr) {
-        if (stderr.length || error > 0) {
-          if (onError instanceof Function) {
-            onError(stderr);
-          }
-        }
-        if (onFinish instanceof Function) {
-          onFinish(stdout);
-        }
+          exec('vlt st', { cwd: options.vaultWork },function(error,stdo,stde) {
+            if (/is not under vault control/g.test(stdo)) {
+              cbParams(params + ' --force');
+            } else {
+              cbParams(params);
+            }
+          });
+      } else {
+        cbParams(params);
+      };
+    };
+
+    buildParams(function(params) {
+
+      var command = ['vlt', credentials, 'co', params, opts.host.uri, '.'].join(' ');
+
+      // stdout can be true, false or a filepath to log.
+      if ((typeof opts.stdout === 'string') && (opts.stdout.length)) {
+          command += ' > ' + opts.stdout;
+      } else {
+        if (opts.stdout === false)
+          command += ' > /dev/null';
+      };
+
+      callback(command);
     });
+  }
+
+
+
+  exports.checkout = function(callback) {
+
+    buildCheckoutCommand(options, function(command) {
+
+      grunt.log.writeln(command);
+
+      var coProcess = exec(command, {maxBuffers: 200*2048, cwd: options.vaultWork},function(error,stdo,stde) {
+        if (options.checkout.stdout !== false) {
+          console.log(stdo);
+        }
+        if (!error) {
+          callback(0);
+        } else {
+          console.log(stde);
+          onExecError(error);
+          callback(1)
+        }
+      });
+    })
   };
 
 

@@ -26,7 +26,7 @@ module.exports = function(grunt) {
     // Configuration to be run (and then tested).
     svlt: {
       options: {
-        vaultWork: '/home/proton/code/cq-kids/ntg-kids-web-view/target/vault-work/jcr_root',
+        vaultWork: process.env.VAULT,
         src: ['**','**/{*.*,.*.xml}', '!**/.vlt*'],
         force: 'auto',
         stdout: true,
@@ -35,10 +35,10 @@ module.exports = function(grunt) {
         checkout: {
           host: {
             uri: 'http://localhost:4502/crx',
-            user: false,
-            password: false
+            user: 'admin',
+            pwd: 'admin'
           },
-          force: 'auto',
+          autoforce: true,
           params: '--verbose',
           stdout: true
         }

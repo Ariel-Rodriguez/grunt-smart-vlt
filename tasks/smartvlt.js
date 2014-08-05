@@ -21,19 +21,18 @@ module.exports = function(grunt) {
 
     if ( this.args[0] === 'co') {
 
-      this.requiresConfig('svlt.checkout.host');
+      this.requiresConfig('svlt.options.checkout.host');
 
-      vlt.checkout(
-        function(err) {
-          done(false);
-        },
-        function(out) {
-          done(true);
+      vlt.checkout(function(error) {
+          done(error);
         });
+
     } else {
+
       vlt.autorun(function(error) {
         done(!error);
       });
+
     }
   });
 
