@@ -155,6 +155,9 @@ module.exports = function(grunt, options, scope) {
 
     var error = false;
     var maxAttemps = 4;
+
+    var each = (options.multithread) ? async.each : async.eachSeries;
+
     // Checks for some available vlt operations and execute them.
     var processAll = function() {
       grunt.log.writeln('Getting information...');
@@ -163,8 +166,8 @@ module.exports = function(grunt, options, scope) {
       // to keep up to date our work directory.
       whatsNext(function(taskList) {
 
-        // Executes each vlt's commit at once (sub-commands per file must run in serie)
-        async.each(taskList, function(task, nextTask) {
+        // Executes vlt's commit (but sub-commands per file will run in serie)
+        each(taskList, function(task, nextTask) {
 
           // Executes each vlt sub-command in order.
           async.eachSeries(task.cmd, function(arg, nextCommand) {

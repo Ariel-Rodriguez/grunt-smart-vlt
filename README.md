@@ -46,7 +46,8 @@ grunt.initConfig({
     options: {
       vaultWork: 'target/vault-work/jcr_root',
       src: ['**','**/{*.*,.*.xml}', '!**/.vlt*'],
-      stdout: true
+      stdout: true,
+      multithread: true
 
       checkout: {
         host: {
@@ -72,6 +73,11 @@ Type: `String`
 This path is where the working directory is loacated.
 
 **NOTE: svlt:co will checkout to this path.**
+
+#### options.multithread
+Type `Boolean`
+
+Set value in `true` to perform multiple vlt operations at once.
 
 #### options.checkout.params
 Type: `Array`
