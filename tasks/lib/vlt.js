@@ -13,7 +13,6 @@ module.exports = function(grunt, options, scope) {
   var spawn = require('child_process').spawn;
   var exec  = require('child_process').exec;
   var async = require('async');
-  var root  = scope;
 
   /*
     Returns a callback with a list of possible task to do with vlt.
@@ -30,9 +29,12 @@ module.exports = function(grunt, options, scope) {
         'filter': new RegExp('(^[?]\\s)','gm'),
         'cmd': ['add -N','ci -N']
       }, {
-        'filter': new RegExp('(^[A]\\s)|(^[M]\\s)|(^[D]\\s)','gm'),
+        'filter': new RegExp('(^[M]\\s)','gm'),
         'cmd': ['ci -N']
-      }];
+      }, {
+        'filter': new RegExp('(^[A]\\s)|(^[D]\\s)','gm'),
+        'cmd': ['up -N','ci -N']
+      }, ];
 
     // We read every stream object coming from chilld process
     // and push the proper command for that instruction outputed from that stream.
@@ -114,43 +116,48 @@ module.exports = function(grunt, options, scope) {
 
   exports.autorun = function(callback) {
 
-    // Check for some available vlt operations and execute them.
-    var toDo = function() {
+    var error = false;
+    var maxAttemps = 4;
+    // Checks for some available vlt operations and execute them.
+    var processAll = function() {
 
-      // tasklist contains the things that we might do to keep up to date our work directory.
+      // Callback returns the tasklist what contains the things that we should run
+      // to keep up to date our work directory.
       whatsNext(function(taskList) {
 
-      // Executes each vlt commit (all tasks at once) multithread: true
-      async.each(taskList, function(task, taskFinish) {
+        // Executes each vlt's commit at once (sub-commands per file must run in serie)
+        async.each(taskList, function(task, taskFinish) {
 
-        // Execute each vlt sub-command in order.
-        async.eachSeries(task.cmd, function(arg, nextCommand) {
+          // Executes each vlt sub-command in order.
+          async.eachSeries(task.cmd, function(arg, nextCommand) {
 
-          // TODO: make these arguments optional
-          var command = 'vlt ' + arg + ' --force ' + task.file;
+            // TODO: make these arguments optional
+            var command = 'vlt ' + arg + ' --force ' + task.file;
 
-          console.log('running: '+command+' | From:'+options.vaultWork);
+            grunt.log.writeln(options.vaultWork + '$ ' + command);
 
-          var proc = exec(command, { cwd: options.vaultWork }, function(err,stdout,stderr) {
-            if (options.stdout) {
-              grunt.log.writeln(stdout);
-            }
-            nextCommand();
-          });
+            var proc = exec(command, { cwd: options.vaultWork }, function(err,stdout,stderr) {
+              if (options.stdout) {
+                grunt.log.writeln(stdout);
+                if (stderr.length) grunt.log.error(stderr);
+              }
+              nextCommand();
+            });
+
+          }, taskFinish);
+
         }, function() {
-          taskFinish();
-        });
-      }, function() {
-          if (taskList.length > 0) {
-            toDo()
-          } else {
-            callback(0);
-          }
-      });// each
-    });// whatsNext
-    };// toDo
+            if (taskList.length && --maxAttemps) {
+              processAll()
+            } else {
+              error = maxAttemps === 0
+              callback(error);
+            }
+        });// each
+      });// whatsNext
+    };// processAll
 
-    toDo();
+    processAll();
   };
 
   return exports;

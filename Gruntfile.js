@@ -27,7 +27,7 @@ module.exports = function(grunt) {
     svlt: {
       options: {
         vaultWork: '/home/proton/code/cq-kids/ntg-kids-web-view/target/vault-work/jcr_root',
-        src: ['**/{*.*,.*.xml}', '!**/.vlt*'],
+        src: ['**','**/{*.*,.*.xml}', '!**/.vlt*'],
         force: 'auto',
         stdout: true,
         multithread: true,
