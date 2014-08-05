@@ -1,8 +1,9 @@
-# grunt-smart-vlt
+# grunt-smart-vlt (beta)
 
-> Friendly grunt plugin to run Adobe VLT commands.
-> Run svlt task to automatically commit the changes from your local work.
->
+> Friendly grunt plugin what runs Adobe VLT commands for you.
+
+> Use svlt task to automatically commit the changes from your local work.
+
 > Call to svlt task after any change on your cq vault directory and all vlt operations will be performed.
 
 ## Getting Started
@@ -22,7 +23,7 @@ If VLT command line is not installed, please follow next:
 Open a command line shell and execute `vlt --help`. Make sure it doesn't throw an error.
 
 
-```[Adobe Guide Reference](http://wem.help.adobe.com/enterprise/en_US/10-0/wem/developing/developmenttools/developing_with_eclipse.html#Installing%20FileVault%20(VLT))
+[Adobe Guide Reference](http://wem.help.adobe.com/enterprise/en_US/10-0/wem/developing/developmenttools/developing_with_eclipse.html#Installing%20FileVault%20(VLT))
 
 
 ```shell
