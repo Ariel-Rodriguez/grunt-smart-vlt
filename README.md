@@ -79,7 +79,7 @@ Type `Boolean`
 
 Set value in `true` to perform multiple vlt operations at once.
 
-#### options.checkout.params
+#### options.src
 Type: `Array`
 
 You must specify all directories and file filters that you want to commit under work directory.
